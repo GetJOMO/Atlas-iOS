@@ -149,6 +149,10 @@ NSInteger const ATLQueryControllerPaginationWindow = 30;
 
 - (BOOL)moreMessagesAvailable
 {
+    if (self.conversation.isDeleted) {
+        return NO;
+    }
+    
     return [self messagesAvailableLocally] != 0 || [self messagesAvailableRemotely] != 0;
 }
 

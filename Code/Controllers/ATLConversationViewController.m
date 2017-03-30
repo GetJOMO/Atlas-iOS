@@ -839,6 +839,10 @@ static NSInteger const ATLPhotoActionSheet = 1000;
             [self configureControllerForChangedParticipants];
             break;
         }
+        // conversation was deleted for all users
+        if (change.type == LYRObjectChangeTypeDelete) {
+            [self.navigationController popViewControllerAnimated:YES];
+        }
     }
 }
 

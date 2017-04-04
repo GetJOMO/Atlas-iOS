@@ -228,7 +228,7 @@ static CGFloat const ATLMaxScrollDistanceFromBottom = 150;
     insets.bottom = keyboardHeight + self.typingIndicatorInset;
     self.collectionView.scrollIndicatorInsets = insets;
     self.collectionView.contentInset = insets;
-    self.typingIndicatorViewBottomConstraint.constant = -keyboardHeight;
+    self.typingIndicatorViewBottomConstraint.constant = keyboardHeight < 100 ? -10 : -keyboardHeight;
 }
 
 #pragma mark - Notification Handlers

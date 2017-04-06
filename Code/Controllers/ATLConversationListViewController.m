@@ -154,9 +154,10 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
     // Perform setup here so that our children can initialize via viewDidLoad
     if (!self.queryController) {
         [self setupConversationQueryController];
-    } else if (!self.queryController.delegate) {
-        self.queryController.delegate = self;
+    }
+    else if (!self.queryController.delegate) {
         [self.tableView reloadData];
+        self.queryController.delegate = self;
     }
     
     if (!self.hasAppeared) {
@@ -196,6 +197,9 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
     [super viewWillDisappear:animated];
     
     self.queryController.delegate = nil;
+    self.insertedRowIndexPaths = nil;
+    self.deletedRowIndexPaths = nil;
+    self.updatedRowIndexPaths = nil;
     
     [[NSNotificationCenter defaultCenter] removeObserver:self name:LYRClientDidAuthenticateNotification object:self.layerClient];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:LYRClientDidDeauthenticateNotification object:self.layerClient];

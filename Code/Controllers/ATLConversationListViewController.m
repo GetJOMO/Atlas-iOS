@@ -48,9 +48,6 @@ static UIView *ATLMakeLoadingMoreConversationsIndicatorView()
 @property (nonatomic) BOOL hasAppeared;
 @property (nonatomic) BOOL showingMoreConversationsIndicator;
 @property (nonatomic, readwrite) UISearchController *searchController;
-@property (nonatomic) NSMutableArray *insertedRowIndexPaths;
-@property (nonatomic) NSMutableArray *deletedRowIndexPaths;
-@property (nonatomic) NSMutableArray *updatedRowIndexPaths;
 
 @end
 
@@ -133,7 +130,7 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
         self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
         self.searchController.searchResultsUpdater = self;
         self.searchController.dimsBackgroundDuringPresentation = NO;
-
+        
         // UISearchBar
         self.searchController.searchBar.delegate = self;
         self.searchController.searchBar.translucent = NO;
@@ -154,9 +151,6 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
     // Perform setup here so that our children can initialize via viewDidLoad
     if (!self.queryController) {
         [self setupConversationQueryController];
-    } else if (!self.queryController.delegate) {
-        self.queryController.delegate = self;
-        [self.tableView reloadData];
     }
     
     if (!self.hasAppeared) {
@@ -194,8 +188,6 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
-    
-    self.queryController.delegate = nil;
     
     [[NSNotificationCenter defaultCenter] removeObserver:self name:LYRClientDidAuthenticateNotification object:self.layerClient];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:LYRClientDidDeauthenticateNotification object:self.layerClient];
@@ -347,7 +339,6 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
     if (conversation == nil) {
         return;     // NOTE the early return if the conversation isn't found!
     }
-    
     [conversationCell presentConversation:conversation];
     
     if (self.displaysAvatarItem) {
@@ -500,6 +491,7 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
         selectedConversation = [self.queryController objectAtIndexPath:indexPath];
     }
     self.conversationSelectedBeforeContentChange = selectedConversation;
+    [self.tableView beginUpdates];
 }
 
 - (void)queryController:(LYRQueryController *)controller
@@ -510,17 +502,22 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
 {
     switch (type) {
         case LYRQueryControllerChangeTypeInsert:
-            [self.insertedRowIndexPaths addObject:newIndexPath];
+            [self.tableView insertRowsAtIndexPaths:@[newIndexPath]
+                                  withRowAnimation:UITableViewRowAnimationAutomatic];
             break;
         case LYRQueryControllerChangeTypeUpdate:
-            [self.updatedRowIndexPaths addObject:indexPath];
+            [self.tableView reloadRowsAtIndexPaths:@[indexPath]
+                                  withRowAnimation:UITableViewRowAnimationAutomatic];
             break;
         case LYRQueryControllerChangeTypeMove:
-            [self.deletedRowIndexPaths addObject:indexPath];
-            [self.insertedRowIndexPaths addObject:newIndexPath];
+            [self.tableView deleteRowsAtIndexPaths:@[indexPath]
+                                  withRowAnimation:UITableViewRowAnimationAutomatic];
+            [self.tableView insertRowsAtIndexPaths:@[newIndexPath]
+                                  withRowAnimation:UITableViewRowAnimationAutomatic];
             break;
         case LYRQueryControllerChangeTypeDelete:
-            [self.deletedRowIndexPaths addObject:indexPath];
+            [self.tableView deleteRowsAtIndexPaths:@[indexPath]
+                                  withRowAnimation:UITableViewRowAnimationAutomatic];
             break;
         default:
             break;
@@ -529,18 +526,10 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
 
 - (void)queryControllerDidChangeContent:(LYRQueryController *)queryController
 {
-    [self.tableView beginUpdates];
-    [self.tableView deleteRowsAtIndexPaths:self.deletedRowIndexPaths withRowAnimation:UITableViewRowAnimationAutomatic];
-    [self.tableView insertRowsAtIndexPaths:self.insertedRowIndexPaths withRowAnimation:UITableViewRowAnimationAutomatic];
-    [self.tableView reloadRowsAtIndexPaths:self.updatedRowIndexPaths withRowAnimation:UITableViewRowAnimationAutomatic];
     [self.tableView endUpdates];
     
-    self.insertedRowIndexPaths = nil;
-    self.deletedRowIndexPaths = nil;
-    self.updatedRowIndexPaths = nil;
-    
     [self configureLoadingMoreConversationsIndicatorView];
-
+    
     if (self.conversationSelectedBeforeContentChange) {
         NSIndexPath *indexPath = [self.queryController indexPathForObject:self.conversationSelectedBeforeContentChange];
         if (indexPath) {
@@ -548,21 +537,6 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
         }
         self.conversationSelectedBeforeContentChange = nil;
     }
-}
-
-- (NSMutableArray *)insertedRowIndexPaths
-{
-    return _insertedRowIndexPaths ?: (_insertedRowIndexPaths = [[NSMutableArray alloc] init]);
-}
-
-- (NSMutableArray *)deletedRowIndexPaths
-{
-    return _deletedRowIndexPaths ?: (_deletedRowIndexPaths = [[NSMutableArray alloc] init]);
-}
-
-- (NSMutableArray *)updatedRowIndexPaths
-{
-    return _updatedRowIndexPaths ?: (_updatedRowIndexPaths = [[NSMutableArray alloc] init]);
 }
 
 #pragma mark - UIScrollViewDelegate
@@ -611,7 +585,7 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
         return;
     }
     self.showingMoreConversationsIndicator = moreConversationsAvailable;
-
+    
     // The indicator view is installed as the table's footer view. When no indicator is needed, install an empty view. This is required in order to suppress the dummy separator lines that UITableView draws to simulate empty rows.
     self.tableView.tableFooterView = self.showingMoreConversationsIndicator ? ATLMakeLoadingMoreConversationsIndicatorView() : [[UIView alloc] init];
 }
@@ -629,9 +603,9 @@ NSString *const ATLConversationListViewControllerDeletionModeEveryone = @"Everyo
         [self.delegate conversationListViewController:self didSearchForText:searchString completion:^(NSSet *filteredParticipants) {
             if (![searchString isEqualToString:self.searchController.searchBar.text]) return;
             NSSet *participantIdentifiers = [filteredParticipants valueForKey:@"userID"];
-
+            
             LYRPredicate *predicate = [LYRPredicate predicateWithProperty:@"participants" predicateOperator:LYRPredicateOperatorIsIn value:participantIdentifiers];
-
+            
             [self updateQueryControllerWithPredicate: predicate];
         }];
     }

@@ -42,7 +42,6 @@ static UIView *ATLMakeLoadingMoreConversationsIndicatorView()
 
 @interface ATLConversationListViewController () <UIActionSheetDelegate, LYRQueryControllerDelegate, UISearchBarDelegate, UISearchResultsUpdating>
 
-@property (nonatomic) LYRQueryController *queryController;
 @property (nonatomic) LYRConversation *conversationToDelete;
 @property (nonatomic) LYRConversation *conversationSelectedBeforeContentChange;
 @property (nonatomic) BOOL hasAppeared;

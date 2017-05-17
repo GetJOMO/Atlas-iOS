@@ -223,12 +223,12 @@ static CGFloat const ATLMaxScrollDistanceFromBottom = 150;
     [self.messageInputToolbar layoutIfNeeded];
     
     UIEdgeInsets insets = self.collectionView.contentInset;
-    CGFloat keyboardHeight = MAX(self.keyboardHeight, CGRectGetHeight(self.messageInputToolbar.frame));
-    
+    CGFloat keyboardHeight = self.keyboardHeight > CGRectGetHeight(self.messageInputToolbar.frame) ? self.keyboardHeight : 0;
     insets.bottom = keyboardHeight + self.typingIndicatorInset;
+    
     self.collectionView.scrollIndicatorInsets = insets;
     self.collectionView.contentInset = insets;
-    self.typingIndicatorViewBottomConstraint.constant = keyboardHeight < 100 ? -10 : -keyboardHeight;
+    self.typingIndicatorViewBottomConstraint.constant = keyboardHeight < 100 ? -10 : -keyboardHeight; // -10 to offset white padding of input bar
 }
 
 #pragma mark - Notification Handlers

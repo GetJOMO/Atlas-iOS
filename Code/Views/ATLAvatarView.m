@@ -91,7 +91,8 @@ NSString *const ATLAvatarViewAccessibilityLabel = @"ATLAvatarViewAccessibilityLa
     
     // Presence Status View
     _presenceStatusView = [[ATLPresenceStatusView alloc] init];
-    _presenceStatusEnabled = true;
+    _presenceStatusEnabled = NO; // KK: turned off by default; turn back on to show online status
+    _presenceStatusView.hidden = !_presenceStatusEnabled;
     [self addSubview:_presenceStatusView];
 }
 

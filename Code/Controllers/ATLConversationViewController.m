@@ -1270,7 +1270,13 @@ static NSInteger const ATLPhotoActionSheet = 1000;
             for (ATLDataSourceChange *change in objectChanges) {
                 switch (change.type) {
                     case LYRQueryControllerChangeTypeInsert:
-                        [self.collectionView insertSections:[NSIndexSet indexSetWithIndex:change.newIndex]];
+                        // taken from PR: https://github.com/layerhq/Atlas-iOS/pull/1403/files
+                        // For inserts, changes should only be inserted if changes aren't already available
+                        NSUInteger collectionCount = self.collectionView.numberOfSections;
+                        NSUInteger controllerCount = queryController.count;
+                        if (collectionCount <= controllerCount) {
+                            [self.collectionView insertSections:[NSIndexSet indexSetWithIndex:change.newIndex]];
+                        }
                         break;
                         
                     case LYRQueryControllerChangeTypeMove:
